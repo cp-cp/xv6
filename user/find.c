@@ -7,8 +7,7 @@
 char *fmtname(char *path)
 {
     char *p;
-    for (p = path + strlen(path); p >= path && *p != '/'; p--)
-        ;
+    for (p = path + strlen(path); p >= path && *p != '/'; p--);
     p++;
     return p;
 }
@@ -46,18 +45,13 @@ void find(char *dir_name, char *file_name)
         {
             printf("find: path too long\n");
         }
-        //将path复制到buf里
         strcpy(buf, dir_name);
-        //p为一个指针，指向buf(path)的末尾
         p = buf + strlen(buf);
-        //在末尾添加/ 比如 path为 a/b/c 经过这步后变为 a/b/c/<-p
         *p++ = '/';
-        // 如果是文件夹，则循环读这个文件夹里面的文件
         while (read(fd, &de, sizeof(de)) == sizeof(de))
         {
             if (de.inum == 0 || (strcmp(de.name, ".") == 0) || (strcmp(de.name, "..") == 0))
                 continue;
-            //拼接出形如 a/b/c/de.name 的新路径(buf)
             memmove(p, de.name, DIRSIZ);
             p[DIRSIZ] = 0;
             find(buf, file_name);
