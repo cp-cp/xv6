@@ -7,6 +7,19 @@
 #include "proc.h"
 
 uint64
+sys_trace()
+{
+  int n;
+
+  argint(0, &n);
+
+  struct proc *pro = myproc();
+  pro->trace_bmp = n;
+
+  return 0;
+} 
+
+uint64
 sys_exit(void)
 {
   int n;
