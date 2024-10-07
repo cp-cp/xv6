@@ -3,6 +3,10 @@
 #include "kernel/sysinfo.h"
 #include "user/user.h"
 
+int sysinfo(struct sysinfo *info)
+{
+  return sysinfofo(info);
+}
 
 void
 sinfo(struct sysinfo *info) {

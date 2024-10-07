@@ -1,5 +1,5 @@
 struct stat;
-
+struct sysinfo;
 // system calls
 int fork(void);
 int exit(int) __attribute__((noreturn));
@@ -23,7 +23,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 int trace(int);
-
+int sysinfofo(struct sysinfo*);//思考：这里的参数如何被转到内核？通过地址。
 // ulib.c
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);
