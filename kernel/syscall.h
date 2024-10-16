@@ -30,4 +30,4 @@
 #define SYS_mmap      27
 #define SYS_munmap    28
 #define SYS_connect   29
-#define SYS_pgaccess  30
+#define SYS_pgaccess  30//已经写好

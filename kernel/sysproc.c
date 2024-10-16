@@ -74,7 +74,26 @@ sys_sleep(void)
 int
 sys_pgaccess(void)
 {
-  // lab pgtbl: your code here.
+  uint64 vaddr;
+  int num;
+  uint64 res_addr;
+  argaddr(0, &vaddr);//起始虚拟地址
+  argint(1, &num);//检查数量
+  argaddr(2, &res_addr);//保存地址
+
+  struct proc *p = myproc();
+  pagetable_t pagetable = p->pagetable;
+  uint64 res = 0;
+
+  for(int i = 0; i < num; i++){
+    pte_t* pte = walk(pagetable, vaddr + PGSIZE * i, 1);
+    if(*pte & PTE_A){
+      *pte &= (~PTE_A);
+      res |= (1L << i);//保存结果
+    }
+  }
+
+  copyout(pagetable, res_addr, (char*)&res, sizeof(uint64));
   return 0;
 }
 #endif
