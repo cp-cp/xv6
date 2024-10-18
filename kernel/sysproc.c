@@ -6,6 +6,24 @@
 #include "spinlock.h"
 #include "proc.h"
 
+
+
+uint64
+sys_sigalarm(void){
+  struct proc* p=myproc();
+  argaddr(0, &(p->tick_threshold));
+  argaddr(1, &(p->alarm_handler));
+  return 0;
+}
+
+uint64
+sys_sigreturn(void){
+  struct proc* p=myproc();
+  p->alarm_not_free=0;
+  *(p->trapframe) = *(p->old_trapframe);
+  return p->trapframe->a0;
+}
+
 uint64
 sys_exit(void)
 {
@@ -67,6 +85,7 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+  backtrace();
   return 0;
 }
 
