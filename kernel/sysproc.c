@@ -20,7 +20,7 @@ uint64
 sys_sigreturn(void){
   struct proc* p=myproc();
   p->alarm_not_free=0;
-  *(p->trapframe) = *(p->old_trapframe);
+  *(p->trapframe) = *(p->old_trapframe);//恢复之前的trapframe
   return p->trapframe->a0;
 }
 

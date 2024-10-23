@@ -69,7 +69,7 @@ usertrap(void)
     // ok
   } else {
     printf("usertrap(): unexpected scause %p pid=%d\n", r_scause(), p->pid);
-    printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
+  printf("            sepc=%p stval=%p\n", r_sepc(), r_stval());
     setkilled(p);
   }
 
@@ -89,7 +89,7 @@ usertrap(void)
         {
           p->alarm_not_free=1;
           *(p->old_trapframe) = *(p->trapframe) ;
-          p->trapframe->epc = p->alarm_handler;
+          p->trapframe->epc = p->alarm_handler;//返回用户空间执行的指令地址
 
         }
       }
