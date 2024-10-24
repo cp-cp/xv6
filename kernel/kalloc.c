@@ -23,10 +23,13 @@ struct {
   struct run *freelist;
 } kmem;
 
+int ref_array[PHYSTOP / PGSIZE];
+
 void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  memset(ref_array, 0, sizeof(ref_array));
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -50,6 +53,9 @@ kfree(void *pa)
 
   if(((uint64)pa % PGSIZE) != 0 || (char*)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
+
+  if (--ref_array[(uint64)pa / PGSIZE] > 0)
+    return;
 
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
@@ -78,5 +84,8 @@ kalloc(void)
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
+  
+  ref_array[(uint64)r / PGSIZE] = 1;
+
   return (void*)r;
 }
