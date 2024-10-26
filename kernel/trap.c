@@ -178,16 +178,16 @@ clockintr()
 // 1 if other device,
 // 0 if not recognized.
 int
-devintr()
+devintr()//处理设备中断
 {
-  uint64 scause = r_scause();
+  uint64 scause = r_scause();//中断原因寄存器
 
   if((scause & 0x8000000000000000L) &&
-     (scause & 0xff) == 9){
+     (scause & 0xff) == 9){//判断是否为外部中断
     // this is a supervisor external interrupt, via PLIC.
 
     // irq indicates which device interrupted.
-    int irq = plic_claim();
+    int irq = plic_claim();//中断请求号
 
     if(irq == UART0_IRQ){
       uartintr();
@@ -210,7 +210,7 @@ devintr()
       plic_complete(irq);
 
     return 1;
-  } else if(scause == 0x8000000000000001L){
+  } else if(scause == 0x8000000000000001L){//软件中断
     // software interrupt from a machine-mode timer interrupt,
     // forwarded by timervec in kernelvec.S.
 
