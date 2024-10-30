@@ -21,13 +21,65 @@ struct run {
 struct {
   struct spinlock lock;
   struct run *freelist;
-} kmem;
+} kmem[NCPU];//对内存按照CPU数量进行划分
+
+int 
+pa2cpuid(void* pa){
+  uint64 chunk = (((char*)PHYSTOP - (char*)end)/NCPU);//每个CPU的内存大小
+  
+  int id=0;
+  char *p_start = end;
+  char *p_end = end + chunk;
+  
+  for(;p_end <= (char*)PHYSTOP && id < NCPU ; id++ , p_start += chunk, p_end += chunk){
+    if((char*)pa <= p_end && (char*)pa >= p_start)
+      return id;
+  }
+
+  return -1;
+}
+
+
+void*
+find_freepage(int sid){
+  struct run *r;
+  for(int id = 0 ; id < NCPU ; id++){
+    if(id == sid){
+      continue;
+    }
+    //avoid multi-stealing
+    acquire(&kmem[id].lock);
+    r = kmem[id].freelist;
+    if(r){
+      //printf("steal from CPU-%d",id);
+      kmem[id].freelist = r->next;
+      release(&kmem[id].lock);
+      return (void*)r;
+    }
+    release(&kmem[id].lock);
+  }
+  return (void*)0;
+}
+
+struct run*
+steal_mem(int sid){
+  struct run *r;
+  r = (struct run*)find_freepage(sid);
+  return r;
+}
 
 void
 kinit()
 {
-  initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)PHYSTOP);
+  //init locks for per-CPU
+  uint64 start_offset,end_offset;
+  uint64 chunk = (((char*)PHYSTOP - (char*)end)/NCPU);
+  for(int id = 0; id<NCPU ; id++){
+    initlock(&kmem[id].lock, "kmem");
+    start_offset =  id * chunk;
+    end_offset = (NCPU-id-1) * chunk;
+    freerange((end + start_offset), (void*)(PHYSTOP - end_offset));
+  }
 }
 
 void
@@ -53,13 +105,17 @@ kfree(void *pa)
 
   // Fill with junk to catch dangling refs.
   memset(pa, 1, PGSIZE);
+  int tid = pa2cpuid(pa); //target CPU-id
+
+  if(tid < 0)
+    panic("runout mem");
 
   r = (struct run*)pa;
-
-  acquire(&kmem.lock);
-  r->next = kmem.freelist;
-  kmem.freelist = r;
-  release(&kmem.lock);
+  
+  acquire(&kmem[tid].lock);
+  r->next = kmem[tid].freelist;
+  kmem[tid].freelist = r;
+  release(&kmem[tid].lock);
 }
 
 // Allocate one 4096-byte page of physical memory.
@@ -69,12 +125,22 @@ void *
 kalloc(void)
 {
   struct run *r;
+ 
+  push_off();
+  int cid = cpuid(); // current CPU-id
+  pop_off();
 
-  acquire(&kmem.lock);
-  r = kmem.freelist;
-  if(r)
-    kmem.freelist = r->next;
-  release(&kmem.lock);
+  acquire(&kmem[cid].lock);
+  r = kmem[cid].freelist;
+  if(r){
+    kmem[cid].freelist = r->next;
+    release(&kmem[cid].lock);
+  }
+    
+  else{
+    release(&kmem[cid].lock);
+    r = steal_mem(cid);
+  } 
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
